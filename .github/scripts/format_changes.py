@@ -6,7 +6,7 @@ def format_changes(changes):
     code_block_started = False
     prev_is_jira = False
     for line in changes.split(r'\r\n'):
-        # Remove everything after "--Full Changelog--"
+        # "**Full Changelog" 以降のすべてを削除
         if line.startswith('**Full Changelog'):
             break
 
@@ -14,21 +14,20 @@ def format_changes(changes):
         if line.startswith('## JIRA'):
             prev_is_jira = True
             continue
-        
         if prev_is_jira:
             line = f'<{line}|JIRA Release>'
             formatted_lines.append(line)
             prev_is_jira=False
             continue
 
-        # Remove "by @username" and the URL until the end of the line
+        # " by @username" とその行の最後までの URL を削除
         if ' by @' in line:
             line = line.split(' by @')[0]
         
-        # Replace * with -
+        # * を - に置換
         line = line.replace(r'*', '-')
 
-        # Replace ## with *text*
+        # ## を *text* に置換
         if line.startswith('##'):
             line = '*' + line.replace('##', '').strip() + '*'
         
@@ -37,6 +36,7 @@ def format_changes(changes):
 
         formatted_lines.append(line)
 
+        # What's Changed 配下はコードブロックにする
         if line == "*What's Changed*":
             formatted_lines.append('```')
     

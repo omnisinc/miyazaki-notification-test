@@ -16,17 +16,12 @@ jobs:
           ACTIONS_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           echo "ACTIONS_URL=${ACTIONS_URL}" >> $GITHUB_ENV
       
-      - name: Set changes
-        run: |
-          CHANGES=$(echo ${{ toJson(github.event.release.body) }})
-          FORMATTED_CHANGES=$(echo "\`\`\`\\n$CHANGES\\n\`\`\`")
-    
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Format changes
+      - name: Get changes
         run: |
           CHANGES=$(echo ${{ toJson(github.event.release.body) }})
           FORMATTED_CHANGES=$(python .github/scripts/format_changes.py "$CHANGES")
