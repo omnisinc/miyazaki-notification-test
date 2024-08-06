@@ -37,12 +37,12 @@ def format_changes(changes):
 
         formatted_lines.append(line)
 
-        #if line == "*What's Changed*":
-        #    formatted_lines.append('```')
+        if line == "*What's Changed*":
+            formatted_lines.append('```')
     
     formatted_changes = r'\r\n'.join(formatted_lines)
     formatted_changes = formatted_changes.rstrip(r'\r\n')
-    #formatted_changes = formatted_changes + (r'\r\n```')
+    formatted_changes = formatted_changes + (r'\r\n```')
     
     return formatted_changes
 
