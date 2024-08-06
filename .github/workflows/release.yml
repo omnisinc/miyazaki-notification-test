@@ -1,4 +1,4 @@
-name: Prd Release to PlayConsole
+name: release
 
 on:
   release:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/_distribution.yml
+    uses: ./.github/workflows/_notify_slack.yml
     secrets: inherit
     with:
       environment: prd
