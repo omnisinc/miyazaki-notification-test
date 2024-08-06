@@ -18,8 +18,10 @@ jobs:
       
       - name: Set changes
         run: |
-          CHANGES=$(echo "${{ toJson(github.event.release.body) }}" | jq -r '.')
-          echo "CHANGES=${CHANGES}" >> $GITHUB_ENV
+          CHANGES=$(echo '${{ toJson(github.event.release.body) }}'' | jq -r '.')
+          echo "CHANGES<<EOF" >> $GITHUB_ENV
+          echo "$CHANGES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Prepare Slack payload
         id: prepare_payload
