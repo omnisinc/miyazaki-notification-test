@@ -57,7 +57,7 @@
 					"type": "section",
 					"text": {
 						"type": "mrkdwn",
-						"text": "<details><summary>SUMMARY</summary>DETAILS</details>"
+						"text": "${CHANGES}"
 					}
 				}
             ]
