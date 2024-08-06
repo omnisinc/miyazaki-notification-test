@@ -20,6 +20,16 @@ jobs:
         run: |
           CHANGES=$(echo ${{ toJson(github.event.release.body) }})
           FORMATTED_CHANGES=$(echo "\`\`\`\\n$CHANGES\\n\`\`\`")
+    
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Format changes
+        run: |
+          CHANGES=$(echo ${{ toJson(github.event.release.body) }})
+          FORMATTED_CHANGES=$(python .github/scripts/format_changes.py "$CHANGES")
           echo "FORMATTED_CHANGES<<EOF" >> $GITHUB_ENV
           echo "$FORMATTED_CHANGES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
