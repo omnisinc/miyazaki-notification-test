@@ -43,7 +43,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
         env:
           COLOR: "#36a64f"
-          MESSAGE: "成功しました的な something"
+          MESSAGE: ":android-os:  dev への配布が完了しました【Android】"
           ENVIRONMENT: "dev"
           VERSION: "10.2.3"
           COMMIT_HASH: "abcde"
