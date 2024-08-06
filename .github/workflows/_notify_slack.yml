@@ -41,5 +41,5 @@ jobs:
         with:
           payload: ${{ steps.prepare_payload.outputs.payload }}
         env:
-          SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/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"
+          SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/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"
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
