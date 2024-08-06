@@ -31,7 +31,6 @@ jobs:
           COMMIT_HASH: "abcde"
           SUBMITTED_BY: "U01EMP9T20P"
           SUBMITTED_BY_ICON: "https://ca.slack-edge.com/T02EL3GLW-U01EMP9T20P-0fdea9474c5a-512"
-          COMMENT_CONTEXT: "comment"
           ACTIONS_URL: ${{ env.ACTIONS_URL }}
 
       - name: Notify Slack
