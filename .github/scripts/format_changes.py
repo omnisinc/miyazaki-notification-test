@@ -1,4 +1,5 @@
 import sys
+import re
 
 def format_changes(changes):
     formatted_lines = []
@@ -30,6 +31,9 @@ def format_changes(changes):
         # Replace ## with *text*
         if line.startswith('##'):
             line = '*' + line.replace('##', '').strip() + '*'
+        
+        # WOR-1758 のような文字列が含まれている場合、Slack の mrkdwn 文字列に変換
+        line = re.sub(r'(WOR-\d+)', r'<https://omnisinc.atlassian.net/browse/\1|\1>', line)
 
         formatted_lines.append(line)
 
