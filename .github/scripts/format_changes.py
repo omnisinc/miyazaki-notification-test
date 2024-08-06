@@ -2,10 +2,7 @@ import sys
 
 def format_changes(changes):
     formatted_lines = []
-    for line in changes.split(r'\n'):
-        # Remove carriage returns
-        line = line.replace(r'\r', '')
-        
+    for line in changes.split(r'\r\n'):
         # Replace * with -
         line = line.replace(r'*', '-')
         
@@ -15,7 +12,7 @@ def format_changes(changes):
         
         formatted_lines.append(line)
     
-    formatted_changes = '\n'.join(formatted_lines)
+    formatted_changes = '\r\n'.join(formatted_lines)
     
     # Remove everything after "--Full Changelog--"
     if '--Full Changelog--' in formatted_changes:
