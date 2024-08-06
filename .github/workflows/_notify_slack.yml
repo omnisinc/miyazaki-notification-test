@@ -19,17 +19,15 @@ jobs:
       - name: Set changes
         run: |
           CHANGES=$(echo ${{ toJson(github.event.release.body) }})
-          echo "CHANGES<<EOF" >> $GITHUB_ENV
-          echo "$CHANGES" >> $GITHUB_ENV
+          FORMATTED_CHANGES=$(echo "```\n$CHANGES\n```")
+          echo "FORMATTED_CHANGES<<EOF" >> $GITHUB_ENV
+          echo "$FORMATTED_CHANGES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Prepare Slack payload
         id: prepare_payload
         run: |
           PAYLOAD=$(envsubst < .github/config/slack_payload.json.template)
-          echo "PAYLOAD<<EOF" >> $GITHUB_ENV
-          echo "$PAYLOAD" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
           echo "payload<<EOF" >> $GITHUB_OUTPUT
           echo "$PAYLOAD" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
