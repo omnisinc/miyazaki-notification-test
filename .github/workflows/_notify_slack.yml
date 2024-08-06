@@ -19,7 +19,7 @@ jobs:
       - name: Set changes
         run: |
           CHANGES=$(echo ${{ toJson(github.event.release.body) }})
-          FORMATTED_CHANGES=$(echo "```\n$CHANGES\n```")
+          FORMATTED_CHANGES="```\n$CHANGES\n```
           echo "FORMATTED_CHANGES<<EOF" >> $GITHUB_ENV
           echo "$FORMATTED_CHANGES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
