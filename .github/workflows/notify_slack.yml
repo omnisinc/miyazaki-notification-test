@@ -1,0 +1,43 @@
+name: Notify Slack
+
+on:
+  workflow_call:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set actions url
+        run: |
+          ACTIONS_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          echo "ACTIONS_URL=${ACTIONS_URL}" >> $GITHUB_ENV
+
+      - name: Prepare Slack payload
+        id: prepare_payload
+        run: |
+          PAYLOAD=$(envsubst < .github/config/slack_payload.json.template)
+          echo "PAYLOAD<<EOF" >> $GITHUB_ENV
+          echo "$PAYLOAD" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "payload<<EOF" >> $GITHUB_OUTPUT
+          echo "$PAYLOAD" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          COLOR: "#36a64f"
+          MESSAGE: "成功しました的な something"
+          ENVIRONMENT: "dev"
+          VERSION: "10.2.3"
+          COMMIT_HASH: "abcde"
+          SUBMITTED_BY: "U01EMP9T20P"
+          SUBMITTED_BY_ICON: "https://ca.slack-edge.com/T02EL3GLW-U01EMP9T20P-0fdea9474c5a-512"
+          COMMENT_CONTEXT: "comment"
+          ACTIONS_URL: ${{ env.ACTIONS_URL }}
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: ${{ steps.prepare_payload.outputs.payload }}
+        env:
+          SLACK_WEBHOOK_URL: "https://hooks.slack.com/services/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"
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

@@ -1,0 +1,61 @@
+{
+    "attachments": [
+        {
+            "color": "${COLOR}",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "${MESSAGE}",
+                        "emoji": true
+                    }
+                },
+                {
+                    "type": "divider"
+                },
+                ${COMMENT_CONTEXT}
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "plain_text",
+                            "text": "Version: ${VERSION}"
+                        },
+                        {
+                            "type": "plain_text",
+                            "text": "env: ${ENVIRONMENT}"
+                        },
+                        {
+                            "type": "plain_text",
+                            "text": "branch: ${GITHUB_REF_NAME}"
+                        },
+                        {
+                            "type": "plain_text",
+                            "text": "hash: ${COMMIT_HASH}"
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "<${ACTIONS_URL}|actions>"
+                        }
+                    ]
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "image",
+                            "image_url": "${SUBMITTED_BY_ICON}",
+                            "alt_text": ""
+                        },
+                        {
+                            "type": "mrkdwn",
+                            "text": "<@${SUBMITTED_BY}> released."
+                        ${REVIEWERS_ELEMENTS}
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

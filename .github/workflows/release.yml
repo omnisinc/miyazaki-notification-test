@@ -1,0 +1,12 @@
+name: Prd Release to PlayConsole
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    uses: ./.github/workflows/_distribution.yml
+    secrets: inherit
+    with:
+      environment: prd
