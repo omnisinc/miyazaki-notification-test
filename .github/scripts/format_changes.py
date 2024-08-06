@@ -12,13 +12,13 @@ def format_changes(changes):
         
         formatted_lines.append(line)
     
-    formatted_changes = '\r\n'.join(formatted_lines)
+    formatted_changes = r'\r\n'.join(formatted_lines)
     
     # Remove everything after "--Full Changelog--"
     if '--Full Changelog--' in formatted_changes:
         formatted_changes = formatted_changes.split('--Full Changelog--')[0]
     
-    return formatted_changes
+    return formatted_changes.rstrip(r'\r\n')
 
 if __name__ == "__main__":
     changes = sys.argv[1]
