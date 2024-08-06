@@ -53,6 +53,9 @@
                         }
                     ]
                 },
+                {
+                    "type": "divider"
+                },
     			{
 					"type": "section",
 					"text": {
