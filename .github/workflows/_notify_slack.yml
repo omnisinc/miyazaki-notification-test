@@ -40,7 +40,7 @@ jobs:
           EOF
           )
           echo "CHANGES_ELEMENTS<<EOF" >> $GITHUB_ENV
-          echo "$CHANGESS_ELEMENTS" >> $GITHUB_ENV
+          echo "$CHANGES_ELEMENTS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Prepare Slack payload
