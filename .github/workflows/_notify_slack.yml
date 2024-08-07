@@ -25,8 +25,22 @@ jobs:
         run: |
           CHANGES=$(echo ${{ toJson(github.event.release.body) }})
           FORMATTED_CHANGES=$(python .github/scripts/format_changes.py "$CHANGES")
-          echo "FORMATTED_CHANGES<<EOF" >> $GITHUB_ENV
-          echo "$FORMATTED_CHANGES" >> $GITHUB_ENV
+          CHANGES_ELEMENTS=$(cat <<EOF
+          ,
+          {
+              "type": "divider"
+          },
+    			{
+					    "type": "section",
+					    "text": {
+					    	"type": "mrkdwn",
+					    	"text": "$FORMATTED_CHANGES"
+					    }
+				  }
+          EOF
+          )
+          echo "CHANGES_ELEMENTS<<EOF" >> $GITHUB_ENV
+          echo "$CHANGESS_ELEMENTS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Prepare Slack payload
@@ -45,7 +59,7 @@ jobs:
           SUBMITTED_BY: "U01EMP9T20P"
           SUBMITTED_BY_ICON: "https://ca.slack-edge.com/T02EL3GLW-U01EMP9T20P-0fdea9474c5a-512"
           ACTIONS_URL: ${{ env.ACTIONS_URL }}
-          CHANGES: ${{ env.FORMATTED_CHANGES }}
+          CHANGES_ELEMENTS: ${{ env.CHANGES_ELEMENTS }}
 
       - name: Notify Slack
         uses: slackapi/slack-github-action@v1.26.0

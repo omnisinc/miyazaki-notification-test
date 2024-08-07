@@ -52,17 +52,8 @@
                             "text": "<@${SUBMITTED_BY}> released."
                         }
                     ]
-                },
-                {
-                    "type": "divider"
-                },
-    			{
-					"type": "section",
-					"text": {
-						"type": "mrkdwn",
-						"text": "${CHANGES}"
-					}
-				}
+                }
+                ${CHANGES_ELEMENTS}
             ]
         }
     ]
