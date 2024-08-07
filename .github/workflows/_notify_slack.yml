@@ -30,13 +30,13 @@ jobs:
           {
               "type": "divider"
           },
-    			{
-					    "type": "section",
-					    "text": {
-					        "type": "mrkdwn",
-					        "text": "$FORMATTED_CHANGES"
-					    }
-				  }
+          {
+              "type": "section",
+              "text": {
+                  "type": "mrkdwn",
+                  "text": "$FORMATTED_CHANGES"
+              }
+          }
           EOF
           )
           echo "CHANGES_ELEMENTS<<EOF" >> $GITHUB_ENV
