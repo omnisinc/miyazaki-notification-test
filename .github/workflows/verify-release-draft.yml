@@ -49,30 +49,36 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
-              "text": "リリースドラフト検証エラー",
               "attachments": [
                 {
                   "color": "#DC3545",
                   "blocks": [
                     {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*チケット番号突き合わせ結果 - エラー*"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "JIRA リンクが見つからないか、検証中にエラーが発生しました。"
+                      }
+                    },
+                    {
                       "type": "context",
                       "elements": [
                         {
                           "type": "mrkdwn",
-                          "text": "<${{ github.event.release.html_url }}|github>"
+                          "text": "<${{ github.event.release.html_url }}|github changed>"
                         },
                         {
                           "type": "mrkdwn",
                           "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
                         }
                       ]
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "JIRAリンクが見つからないか、検証中にエラーが発生しました。"
-                      }
                     }
                   ]
                 }
@@ -88,31 +94,16 @@ jobs:
           # Base payload
           PAYLOAD=$(cat <<EOF
           {
-            "text": "リリースドラフト検証結果 - 差分あり",
             "attachments": [
               {
                 "color": "#FFC107",
                 "blocks": [
                   {
-                    "type": "context",
-                    "elements": [
-                      {
-                        "type": "mrkdwn",
-                        "text": "<https://omnisinc.atlassian.net/projects/WOR/versions/${{ steps.verify.outputs.fix_version }}/tab/release-report-all-issues|jira>"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "<${{ github.event.release.html_url }}|github>"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "共通チケット数: ${{ steps.verify.outputs.common_count }}"
-                      }
-                    ]
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*チケット番号突き合わせ結果 - 差分あり*"
+                    }
                   }
           EOF
           )
@@ -124,7 +115,7 @@ jobs:
                 \"type\": \"section\",
                 \"text\": {
                   \"type\": \"mrkdwn\",
-                  \"text\": \"*GitHub Changedにのみ存在するチケット:*\n${{ steps.verify.outputs.only_in_release_with_titles }}\"
+                  \"text\": \"*GitHub Changed にのみ存在するチケット:*\n${{ steps.verify.outputs.only_in_release_with_titles }}\"
                 }
               }"
           fi
@@ -136,13 +127,34 @@ jobs:
                 \"type\": \"section\",
                 \"text\": {
                   \"type\": \"mrkdwn\",
-                  \"text\": \"*JIRAのみに存在するチケット:*\n${{ steps.verify.outputs.only_in_jira_with_titles }}\"
+                  \"text\": \"*JIRA にのみ存在するチケット:*\n${{ steps.verify.outputs.only_in_jira_with_titles }}\"
                 }
               }"
           fi
           
-          # Close blocks array
-          PAYLOAD+="
+          # Add context block at the end
+          PAYLOAD+=",
+                  {
+                    \"type\": \"context\",
+                    \"elements\": [
+                      {
+                        \"type\": \"mrkdwn\",
+                        \"text\": \"共通チケット数: ${{ steps.verify.outputs.common_count }}\"
+                      },
+                      {
+                        \"type\": \"mrkdwn\",
+                        \"text\": \"<https://omnisinc.atlassian.net/projects/WOR/versions/${{ steps.verify.outputs.fix_version }}/tab/release-report-all-issues|jira release>\"
+                      },
+                      {
+                        \"type\": \"mrkdwn\",
+                        \"text\": \"<${{ github.event.release.html_url }}|github changed>\"
+                      },
+                      {
+                        \"type\": \"mrkdwn\",
+                        \"text\": \"<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>\"
+                      }
+                    ]
+                  }
                 ]
               }
             ]
@@ -166,38 +178,44 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
-              "text": "リリースドラフト検証成功",
               "attachments": [
                 {
                   "color": "#28A745",
                   "blocks": [
                     {
-                      "type": "context",
-                      "elements": [
-                        {
-                          "type": "mrkdwn",
-                          "text": "<https://omnisinc.atlassian.net/projects/WOR/versions/${{ steps.verify.outputs.fix_version }}/tab/release-report-all-issues|jira>"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "<${{ github.event.release.html_url }}|github>"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "共通チケット数: ${{ steps.verify.outputs.common_count }}"
-                        }
-                      ]
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*チケット番号突き合わせ結果 - 成功*"
+                      }
                     },
                     {
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "リリースノートとJIRAのチケットは完全に一致しています。"
+                        "text": "GitHub Changed と JIRA のチケットは完全に一致しています。"
                       }
+                    },
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "共通チケット数: ${{ steps.verify.outputs.common_count }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<https://omnisinc.atlassian.net/projects/WOR/versions/${{ steps.verify.outputs.fix_version }}/tab/release-report-all-issues|jira release>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.event.release.html_url }}|github changed>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
+                        }
+                      ]
                     }
                   ]
                 }
