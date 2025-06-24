@@ -2,53 +2,40 @@ name: Enforce Prerelease
 
 on:
   release:
-    types: [created, edited]
+    types: [created]
 
 jobs:
   enforce-prerelease:
-    # 条件：
-    # 1. 新規作成の latest release、または
-    # 2. draft から latest release への変更 （prerelease 経由なし）
-    if: |
-      github.event.release.prerelease == false && 
-      github.event.release.draft == false &&
-      (
-        github.event.action == 'created' ||
-        (github.event.action == 'edited' && github.event.changes.draft.from == true)
-      )
+    # 新規作成された latest release のみを対象にする
+    if: github.event.release.prerelease == false && github.event.release.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Convert to draft
-        id: convert_draft
+      - name: Delete invalid release
+        id: delete_release
         uses: actions/github-script@v7
         with:
           script: |
             const { owner, repo } = context.repo;
             const release_id = context.payload.release.id;
+            const release_tag = context.payload.release.tag_name;
+            const release_name = context.payload.release.name;
             
-            console.log(`Converting release ${release_id} to draft`);
+            console.log(`Deleting invalid release ${release_id}`);
             
-            // Update release to draft
-            await github.rest.repos.updateRelease({
-              owner,
-              repo,
-              release_id,
-              draft: true
-            });
+            // Store release info for notification
+            core.setOutput('release_tag', release_tag);
+            core.setOutput('release_name', release_name);
             
-            console.log('Release converted to draft successfully');
-            
-            // Get the updated release URL
-            const updatedRelease = await github.rest.repos.getRelease({
+            // Delete the release
+            await github.rest.repos.deleteRelease({
               owner,
               repo,
               release_id
             });
             
-            // Set output for next step
-            core.setOutput('release_url', updatedRelease.data.html_url);
+            console.log('Release deleted successfully');
             
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v1.24.0
@@ -71,7 +58,7 @@ jobs:
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "リリース `${{ github.event.release.name }}` が prerelease を経由せずに作成されました。\n自動的にドラフトに変換しました。"
+                        "text": "リリース `${{ steps.delete_release.outputs.release_name }}` が prerelease を経由せずに作成されました。\n自動的に削除しました。"
                       }
                     },
                     {
@@ -79,7 +66,7 @@ jobs:
                       "elements": [
                         {
                           "type": "mrkdwn",
-                          "text": "<${{ steps.convert_draft.outputs.release_url }}|リリースを確認>"
+                          "text": "削除されたタグ: `${{ steps.delete_release.outputs.release_tag }}`"
                         },
                         {
                           "type": "mrkdwn",
