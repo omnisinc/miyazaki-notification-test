@@ -133,8 +133,44 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-  build:
+  process-release:
     needs: verify-prerelease
     if: needs.verify-prerelease.outputs.is_verified == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.process_notes.outputs.changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Process release notes
+        id: process_notes
+        run: |
+          cat << 'EOF' > /tmp/release_body.txt
+          ${{ github.event.release.body }}
+          EOF
+          
+          # Use the format_release_changes.py script
+          python .github/workflows/scripts/format_release_changes.py /tmp/release_body.txt > /tmp/formatted_changes.txt
+          
+          # Read the formatted changes
+          CHANGES=$(cat /tmp/formatted_changes.txt)
+          
+          # Set output (properly escaped for GitHub Actions)
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  notify:
+    needs: process-release
     uses: ./.github/workflows/_notify_slack.yml
+    with:
+      message: "Release published: ${{ github.event.release.name }}"
+      version: "${{ github.event.release.tag_name }}"
+      changes: "${{ needs.process-release.outputs.changes }}"
     secrets: inherit
