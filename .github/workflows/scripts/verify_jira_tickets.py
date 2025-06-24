@@ -40,7 +40,6 @@ def extract_fix_version_from_jira_link(release_body: str) -> str:
 
 def get_jira_tickets_from_api(fix_version: str) -> Set[str]:
     """JIRA APIからfix versionに紐づくチケットを取得"""
-    jira_base_url = os.environ.get('JIRA_BASE_URL', 'https://omnisinc.atlassian.net')
     jira_email = os.environ.get('JIRA_EMAIL')
     jira_api_token = os.environ.get('JIRA_API_TOKEN')
     
@@ -53,7 +52,7 @@ def get_jira_tickets_from_api(fix_version: str) -> Set[str]:
     # JQL query to get issues with specific fix version
     jql = f"project = WOR AND fixversion = {fix_version} ORDER BY created DESC"
     
-    url = f"{jira_base_url}/rest/api/2/search"
+    url = "https://omnisinc.atlassian.net/rest/api/2/search"
     params = {
         'jql': jql,
         'fields': 'key',
