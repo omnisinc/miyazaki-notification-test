@@ -103,14 +103,14 @@ jobs:
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "*⚠️ 警告: Prerelease を経由しないリリース (draft→publish)*"
+                        "text": "*⚠️ 警告: Prerelease を経由しないリリース*"
                       }
                     },
                     {
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "リリース `${{ steps.convert_release.outputs.release_name }}` が draft から直接 publish されました。\n自動的に draft に変換しました。"
+                        "text": "リリース `${{ steps.convert_release.outputs.release_name }}` が直接 publish されました。\nリリースを止め、自動的に draft に変換しました。"
                       }
                     },
                     {
