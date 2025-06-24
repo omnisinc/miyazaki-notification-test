@@ -52,13 +52,26 @@ jobs:
               "text": "リリースドラフト検証エラー",
               "attachments": [
                 {
-                  "color": "danger",
+                  "color": "#DC3545",
                   "blocks": [
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.event.release.html_url }}|github>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
+                        }
+                      ]
+                    },
                     {
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "*リリースドラフト検証エラー*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>\n\nJIRAリンクが見つからないか、検証中にエラーが発生しました。"
+                        "text": "JIRAリンクが見つからないか、検証中にエラーが発生しました。"
                       }
                     }
                   ]
@@ -78,14 +91,28 @@ jobs:
             "text": "リリースドラフト検証結果 - 差分あり",
             "attachments": [
               {
-                "color": "warning",
+                "color": "#FFC107",
                 "blocks": [
                   {
-                    "type": "section",
-                    "text": {
-                      "type": "mrkdwn",
-                      "text": "*リリースドラフト検証結果*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
-                    }
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "<https://omnisinc.atlassian.net/projects/WOR/versions/${{ steps.verify.outputs.fix_version }}/tab/release-report-all-issues|jira>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<${{ github.event.release.html_url }}|github>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
+                      },
+                      {
+                        "type": "mrkdwn",
+                        "text": "共通チケット数: ${{ steps.verify.outputs.common_count }}"
+                      }
+                    ]
                   }
           EOF
           )
@@ -97,7 +124,7 @@ jobs:
                 \"type\": \"section\",
                 \"text\": {
                   \"type\": \"mrkdwn\",
-                  \"text\": \"*リリースノートのみに存在するチケット:*\n${{ steps.verify.outputs.only_in_release_with_titles }}\"
+                  \"text\": \"*GitHub Changedにのみ存在するチケット:*\n${{ steps.verify.outputs.only_in_release_with_titles }}\"
                 }
               }"
           fi
@@ -114,15 +141,8 @@ jobs:
               }"
           fi
           
-          # Add common count block
-          PAYLOAD+=",
-                  {
-                    \"type\": \"section\",
-                    \"text\": {
-                      \"type\": \"mrkdwn\",
-                      \"text\": \"共通のチケット数: ${{ steps.verify.outputs.common_count }}\"
-                    }
-                  }
+          # Close blocks array
+          PAYLOAD+="
                 ]
               }
             ]
@@ -149,13 +169,34 @@ jobs:
               "text": "リリースドラフト検証成功",
               "attachments": [
                 {
-                  "color": "good",
+                  "color": "#28A745",
                   "blocks": [
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "<https://omnisinc.atlassian.net/projects/WOR/versions/${{ steps.verify.outputs.fix_version }}/tab/release-report-all-issues|jira>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.event.release.html_url }}|github>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "共通チケット数: ${{ steps.verify.outputs.common_count }}"
+                        }
+                      ]
+                    },
                     {
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "*リリースドラフト検証成功*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>\n\nリリースノートとJIRAのチケットは完全に一致しています。\nチケット数: ${{ steps.verify.outputs.common_count }}"
+                        "text": "リリースノートとJIRAのチケットは完全に一致しています。"
                       }
                     }
                   ]

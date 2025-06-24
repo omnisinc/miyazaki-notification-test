@@ -201,7 +201,7 @@ def main():
     
     # 結果を出力
     print("\n=== Comparison Results ===")
-    print(f"Only in release notes: {sorted(comparison['only_in_release'])}")
+    print(f"Only in GitHub Changed: {sorted(comparison['only_in_release'])}")
     print(f"Only in JIRA: {sorted(comparison['only_in_jira'])}")
     print(f"Common tickets: {len(comparison['common'])}")
     
