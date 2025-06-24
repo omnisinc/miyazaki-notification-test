@@ -127,12 +127,21 @@ def main():
             f.write(f"only_in_jira={','.join(sorted(comparison['only_in_jira']))}\n")
             f.write(f"common_count={len(comparison['common'])}\n")
             f.write(f"has_differences={'true' if comparison['only_in_release'] or comparison['only_in_jira'] else 'false'}\n")
+            f.write(f"fix_version={fix_version}\n")
+            
+            # 全てのチケット情報を出力
+            f.write(f"all_release_tickets={','.join(sorted(release_tickets))}\n")
+            f.write(f"all_jira_tickets={','.join(sorted(jira_tickets))}\n")
             
             # Slack表示用の改行区切りリストも出力
             only_in_release_list = '\\n'.join([f"• {ticket}" for ticket in sorted(comparison['only_in_release'])])
             only_in_jira_list = '\\n'.join([f"• {ticket}" for ticket in sorted(comparison['only_in_jira'])])
+            all_release_list = '\\n'.join([f"• {ticket}" for ticket in sorted(release_tickets)])
+            all_jira_list = '\\n'.join([f"• {ticket}" for ticket in sorted(jira_tickets)])
             f.write(f"only_in_release_list={only_in_release_list}\n")
             f.write(f"only_in_jira_list={only_in_jira_list}\n")
+            f.write(f"all_release_list={all_release_list}\n")
+            f.write(f"all_jira_list={all_jira_list}\n")
     
     # 不一致がある場合は終了コード1で終了
     if comparison['only_in_release'] or comparison['only_in_jira']:

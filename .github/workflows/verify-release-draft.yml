@@ -42,6 +42,48 @@ jobs:
             --release-url "${{ github.event.release.html_url }}"
         continue-on-error: true
 
+      - name: Send test notification with all tickets
+        if: always()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
+          payload: |
+            {
+              "text": "📋 リリースドラフト検証 - チケット一覧（テスト用）",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📋 *リリースドラフト検証 - チケット一覧（テスト用）*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*リリースノートから抽出したチケット:*\n${{ steps.verify.outputs.all_release_list || '(なし)' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*JIRAから取得したチケット (Fix Version: ${{ steps.verify.outputs.fix_version }}):*\n${{ steps.verify.outputs.all_jira_list || '(なし)' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*デバッグ情報:*\n• 検証結果: ${{ steps.verify.outcome }}\n• Has Differences: ${{ steps.verify.outputs.has_differences }}\n• Common Count: ${{ steps.verify.outputs.common_count }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Send Slack notification on failure
         if: failure() && steps.verify.outcome == 'failure'
         uses: slackapi/slack-github-action@v1.24.0
