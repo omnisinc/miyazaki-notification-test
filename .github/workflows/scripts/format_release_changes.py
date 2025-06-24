@@ -20,21 +20,21 @@ def format_changes(changes):
         if not line.strip():
             continue
         
-        # First, convert PR URLs to markdown format before removing by @username
-        # https://github.com/org/repo/pull/123 -> [#123](https://github.com/org/repo/pull/123)
+        # First, convert PR URLs to Slack mrkdwn format before removing by @username
+        # https://github.com/org/repo/pull/123 -> <https://github.com/org/repo/pull/123|#123>
         def replace_pr_url(match):
             url = match.group(0)
             pr_number = match.group(1)
-            return f'[#{pr_number}]({url})'
+            return f'<{url}|#{pr_number}>'
         
         pr_url_pattern = r'https://github\.com/[\w-]+/[\w-]+/pull/(\d+)'
         line = re.sub(pr_url_pattern, replace_pr_url, line)
         
-        # Then remove " by @username" (but PR URL is already converted to markdown)
+        # Then remove " by @username" (but PR URL is already converted to Slack format)
         if ' by @' in line:
             line = re.sub(r'\s+by\s+@[\w-]+', '', line)
         
-        # * を - に置換 (Slack doesn't handle * well in lists)
+        # * を - に置換
         if line.strip().startswith('*'):
             line = line.replace('*', '-', 1)
         
@@ -47,8 +47,8 @@ def format_changes(changes):
         
         formatted_lines.append(line)
     
-    # Join with escaped newlines for JSON
-    return '\\n'.join(formatted_lines)
+    # Wrap entire content in code block and join with escaped newlines for JSON
+    return '```\\n' + '\\n'.join(formatted_lines) + '\\n```'
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
