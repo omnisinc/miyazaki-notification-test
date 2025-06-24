@@ -1,0 +1,118 @@
+name: Verify Release Draft
+
+on:
+  release:
+    types: [created, edited]
+
+jobs:
+  verify-release:
+    if: github.event.release.draft == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests
+          
+      - name: Verify JIRA tickets
+        id: verify
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/workflows/scripts/verify_jira_tickets.py \
+            --release-body "${{ github.event.release.body }}" \
+            --release-name "${{ github.event.release.name }}" \
+            --release-url "${{ github.event.release.html_url }}"
+        continue-on-error: true
+
+      - name: Send Slack notification on failure
+        if: failure() && steps.verify.outcome == 'failure'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🚨 *リリースドラフト検証エラー*",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🚨 *リリースドラフト検証エラー*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>\n\nJIRAリンクが見つからないか、検証中にエラーが発生しました。"
+                  }
+                }
+              ]
+            }
+
+      - name: Send Slack notification for differences
+        if: steps.verify.outputs.has_differences == 'true'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🔍 リリースドラフト検証結果 - 差分あり",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "🔍 *リリースドラフト検証結果*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.verify.outputs.only_in_release != '' && format('⚠️ *リリースノートのみに存在するチケット:*\n{0}', steps.verify.outputs.only_in_release_list) || '' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.verify.outputs.only_in_jira != '' && format('❌ *JIRAのみに存在するチケット:*\n{0}', steps.verify.outputs.only_in_jira_list) || '' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📊 共通のチケット数: ${{ steps.verify.outputs.common_count }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Send Slack notification for success
+        if: steps.verify.outputs.has_differences == 'false' && steps.verify.outcome == 'success'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "✅ リリースドラフト検証成功",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *リリースドラフト検証成功*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>\n\nリリースノートとJIRAのチケットは完全に一致しています。\n📊 チケット数: ${{ steps.verify.outputs.common_count }}"
+                  }
+                }
+              ]
+            }
