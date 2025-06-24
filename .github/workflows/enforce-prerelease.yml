@@ -1,0 +1,67 @@
+name: Enforce Prerelease
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  enforce-prerelease:
+    # 新規作成された latest release のみを対象にする
+    if: github.event.release.prerelease == false && github.event.release.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Convert to prerelease
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const release_id = context.payload.release.id;
+            
+            console.log(`Converting release ${release_id} to prerelease`);
+            
+            // Update release to prerelease
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id,
+              prerelease: true
+            });
+            
+            console.log('Release converted to prerelease successfully');
+            
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*⚠️ 警告: Prereleaseを経由しないリリース*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "リリース `${{ github.event.release.name }}` がprereleaseを経由せずに作成されました。\n自動的にprereleaseに変換しました。"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "<${{ github.event.release.html_url }}|リリースを確認>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
