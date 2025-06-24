@@ -2,13 +2,9 @@ name: release
 
 on:
   release:
-    types: [edited]
+    types: [released]
 
 jobs:
   build:
-    # edited イベントで、prerelease が false に変更された場合のみ実行
-    if: |
-      github.event.release.prerelease == false && 
-      github.event.changes.prerelease.from == true
     uses: ./.github/workflows/_notify_slack.yml
     secrets: inherit

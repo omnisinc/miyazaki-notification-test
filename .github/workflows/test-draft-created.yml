@@ -1,0 +1,66 @@
+name: Test Draft Created Event
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  test-draft-detection:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Log release details
+        run: |
+          echo "Release created!"
+          echo "Name: ${{ github.event.release.name }}"
+          echo "Tag: ${{ github.event.release.tag_name }}"
+          echo "Draft: ${{ github.event.release.draft }}"
+          echo "Prerelease: ${{ github.event.release.prerelease }}"
+          echo "Action: ${{ github.event.action }}"
+
+      - name: Delete if draft (TEST)
+        if: github.event.release.draft == true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const release_id = context.payload.release.id;
+            
+            console.log(`TEST: Draft release detected! Would delete release ${release_id}`);
+            console.log('Release info:', {
+              name: context.payload.release.name,
+              tag: context.payload.release.tag_name,
+              draft: context.payload.release.draft,
+              prerelease: context.payload.release.prerelease
+            });
+            
+            // 実際に削除
+            await github.rest.repos.deleteRelease({
+              owner,
+              repo,
+              release_id
+            });
+            
+            console.log('Draft release deleted for testing purposes');
+
+      - name: Send test notification
+        if: github.event.release.draft == true
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
+          payload: |
+            {
+              "text": "🧪 TEST: Draft release was created and deleted",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*🧪 テスト: Draft リリースの created イベント検証*\n`created` イベントが draft リリースでも発火することを確認しました。\nリリース名: `${{ github.event.release.name }}`"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
