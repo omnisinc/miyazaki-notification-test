@@ -2,8 +2,51 @@ name: Notify Slack
 
 on:
   workflow_call:
+    inputs:
+      message:
+        type: string
+        required: false
+        default: "No message"
+        description: "Main message to send to Slack"
+      version:
+        type: string
+        required: false
+        default: "No version"
+        description: "Version number"
+      environment:
+        type: string
+        required: false
+        default: "No environment"
+        description: "Deployment environment"
+      submitted_by:
+        type: string
+        required: false
+        default: "GitHub Actions"
+        description: "User who submitted the release"
+      submitted_by_icon:
+        type: string
+        required: false
+        default: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+        description: "Icon URL of the submitter"
+      reviewers:
+        type: string
+        required: false
+        default: "No reviewers"
+        description: "Reviewers information"
+      comment_context:
+        type: string
+        required: false
+        default: "No comment context"
+        description: "Additional context for comments"
+      changes:
+        type: string
+        required: false
+        default: "No changes"
+        description: "Changes to post in thread"
     secrets:
-      SLACK_WEBHOOK_URL:
+      SLACK_BOT_TOKEN:
+        required: true
+      TEST_NOTIFY_SLACK_CHANNEL:
         required: true
 
 jobs:
@@ -11,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
       - name: Set actions url
         run: |
           ACTIONS_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
@@ -21,50 +65,109 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Get changes
+      - name: Set environment variables
         run: |
-          CHANGES=$(echo ${{ toJson(github.event.release.body) }})
-          FORMATTED_CHANGES=$(python .github/scripts/format_changes.py "$CHANGES")
-          CHANGES_ELEMENTS=$(cat <<EOF
-          ,
-          {
-              "type": "divider"
+          echo "MESSAGE=${{ inputs.message }}" >> $GITHUB_ENV
+          echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+          echo "ENVIRONMENT=${{ inputs.environment }}" >> $GITHUB_ENV
+          echo "SUBMITTED_BY=${{ inputs.submitted_by }}" >> $GITHUB_ENV
+          echo "SUBMITTED_BY_ICON=${{ inputs.submitted_by_icon }}" >> $GITHUB_ENV
+          echo "COMMIT_HASH=${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "GITHUB_REF_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+
+      - name: Set reviewers elements
+        if: inputs.environment == 'prd'
+        run: |
+          REVIEWERS_ELEMENTS=$(cat <<EOF
           },
           {
-              "type": "section",
-              "text": {
-                  "type": "mrkdwn",
-                  "text": "$FORMATTED_CHANGES"
-              }
-          }
+              "type": "mrkdwn",
+              "text": "Please review changes ${REVIEWERS}"
           EOF
           )
-          echo "CHANGES_ELEMENTS<<EOF" >> $GITHUB_ENV
-          echo "$CHANGES_ELEMENTS" >> $GITHUB_ENV
+          echo "REVIEWERS_ELEMENTS<<EOF" >> $GITHUB_ENV
+          echo "$REVIEWERS_ELEMENTS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Prepare Slack payload
-        id: prepare_payload
+      - name: Set comment context
+        if: inputs.comment != ''
         run: |
-          PAYLOAD=$(envsubst < .github/config/slack_payload.json.template)
-          echo "payload<<EOF" >> $GITHUB_OUTPUT
-          echo "$PAYLOAD" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        env:
-          COLOR: "#36a64f"
-          MESSAGE: ":android-os:  dev への配布が完了しました【Android】"
-          ENVIRONMENT: "dev"
-          VERSION: "10.2.3"
-          COMMIT_HASH: "abcde"
-          SUBMITTED_BY: "U01EMP9T20P"
-          SUBMITTED_BY_ICON: "https://ca.slack-edge.com/T02EL3GLW-U01EMP9T20P-0fdea9474c5a-512"
-          ACTIONS_URL: ${{ env.ACTIONS_URL }}
-          CHANGES_ELEMENTS: ${{ env.CHANGES_ELEMENTS }}
+          COMMENT_CONTEXT=$(cat <<EOF
+          {
+              "type": "context",
+              "elements": [
+                  {
+                      "type": "plain_text",
+                      "text": "${{ inputs.comment }}"
+                  }
+              ]
+          },
+          EOF
+          )
+          echo "COMMENT_CONTEXT<<EOF" >> $GITHUB_ENV
+          echo "$COMMENT_CONTEXT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
-      - name: Notify Slack
-        uses: slackapi/slack-github-action@v1.26.0
+      - name: Set Slack Channel and Token
+        id: set_slack_config
+        run: |
+          echo "channel_id=${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}" >> $GITHUB_OUTPUT
+          echo "token=${{ secrets.SLACK_BOT_TOKEN }}" >> $GITHUB_OUTPUT
+
+
+      - name: Generate main message payload from template
+        id: generate_main_payload
+        run: |
+          # Read template and substitute variables
+          PAYLOAD=$(cat .github/config/slack_bot_block.json.template | 
+            sed "s/\${CHANNEL_ID}/${{ steps.set_slack_config.outputs.channel_id }}/g" | 
+            sed "s/\${MESSAGE}/${{ env.MESSAGE }}/g" | 
+            sed "s/\${VERSION}/${{ env.VERSION }}/g" | 
+            sed "s/\${ENVIRONMENT}/${{ env.ENVIRONMENT }}/g" | 
+            sed "s/\${GITHUB_REF_NAME}/${{ env.GITHUB_REF_NAME }}/g" | 
+            sed "s/\${COMMIT_HASH}/${{ env.COMMIT_HASH }}/g" | 
+            sed "s|\${ACTIONS_URL}|${{ env.ACTIONS_URL }}|g" | 
+            sed "s|\${SUBMITTED_BY_ICON}|${{ env.SUBMITTED_BY_ICON }}|g" | 
+            sed "s/\${SUBMITTED_BY}/${{ env.SUBMITTED_BY }}/g" | 
+            sed "s/\${REVIEWERS_ELEMENTS}/${{ env.REVIEWERS_ELEMENTS }}/g" | 
+            sed "s/\${COMMENT_CONTEXT}/${{ env.COMMENT_CONTEXT }}/g" | 
+            sed '/"thread_ts": "\${THREAD_TS}",/d')
+          
+          # Output payload to file
+          echo "$PAYLOAD" > main_payload.json
+          
+      - name: Send main Slack message
+        id: slack_main
+        uses: slackapi/slack-github-action@v1.24.0
         with:
-          payload: ${{ steps.prepare_payload.outputs.payload }}
+          channel-id: ${{ steps.set_slack_config.outputs.channel_id }}
+          payload-file-path: main_payload.json
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_BOT_TOKEN: ${{ steps.set_slack_config.outputs.token }}
+          
+      - name: Get thread timestamp
+        run: |
+          echo "THREAD_TS=${{ steps.slack_main.outputs.ts }}" >> $GITHUB_ENV
+          
+      - name: Send changes to thread
+        if: ${{ inputs.changes != '' }}
+        run: |
+          # Format changes
+          FORMATTED_CHANGES=$(echo "${{ inputs.changes }}" | sed 's/$/\\n/g' | tr '\n' ' ')
+          
+          # Generate thread payload
+          THREAD_PAYLOAD=$(cat .github/config/slack_changed.json.template | 
+            sed "s/\${CHANNEL_ID}/${{ steps.set_slack_config.outputs.channel_id }}/g" | 
+            sed "s/\${THREAD_TS}/${{ env.THREAD_TS }}/g" | 
+            sed "s/\${FORMATTED_CHANGES}/$FORMATTED_CHANGES/g")
+          
+          echo "$THREAD_PAYLOAD" > thread_payload.json
+          
+      - name: Post changes to thread
+        if: ${{ inputs.changes != '' }}
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ steps.set_slack_config.outputs.channel_id }}
+          payload-file-path: thread_payload.json
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.set_slack_config.outputs.token }}

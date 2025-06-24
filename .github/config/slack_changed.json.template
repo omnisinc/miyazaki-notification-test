@@ -1,0 +1,21 @@
+{
+    "channel": "${CHANNEL_ID}",
+    "thread_ts": "${THREAD_TS}",
+    "text": "変更内容",
+    "blocks": [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*変更内容:*"
+            }
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "${FORMATTED_CHANGES}"
+            }
+        }
+    ]
+}
