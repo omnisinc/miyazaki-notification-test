@@ -160,7 +160,7 @@ jobs:
           import sys
           
           changes = """${{ inputs.changes }}"""
-          lines = [line.strip() for line in changes.split('\\n') if line.strip()]
+          lines = [line.strip() for line in changes.split('\n') if line.strip()]
           
           elements = []
           for line in lines:
@@ -224,6 +224,8 @@ jobs:
           EOF
           
           python3 generate_rich_text.py > thread_payload.json
+          echo "Generated payload:"
+          cat thread_payload.json
           
       - name: Post changes to thread
         if: ${{ inputs.changes != '' }}
