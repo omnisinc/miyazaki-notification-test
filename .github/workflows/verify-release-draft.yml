@@ -1,0 +1,36 @@
+name: Verify Release Draft
+
+on:
+  release:
+    types: [created, edited]
+
+jobs:
+  verify-release:
+    if: github.event.release.draft == true
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests
+          
+      - name: Verify JIRA tickets
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python .github/workflows/scripts/verify_jira_tickets.py \
+            --release-body "${{ github.event.release.body }}" \
+            --release-name "${{ github.event.release.name }}" \
+            --release-url "${{ github.event.release.html_url }}"
