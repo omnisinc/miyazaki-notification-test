@@ -14,6 +14,26 @@ def extract_jira_tickets_from_release_notes(release_body: str) -> Set[str]:
     tickets = re.findall(pattern, release_body)
     return set(tickets)
 
+def format_release_note_title(title: str) -> str:
+    """リリースノートのタイトルをフォーマット
+    - 'by @username' を削除
+    - PR URLを <url|#123> 形式に変換
+    """
+    # 'by @username' を削除
+    title = re.sub(r'\s+by\s+@[\w-]+\s*$', '', title)
+    
+    # PR URLを検出して変換
+    # https://github.com/org/repo/pull/123 -> <https://github.com/org/repo/pull/123|#123>
+    pr_pattern = r'in\s+(https://github\.com/[\w-]+/[\w-]+/pull/(\d+))'
+    match = re.search(pr_pattern, title)
+    if match:
+        full_url = match.group(1)
+        pr_number = match.group(2)
+        # Slack形式のリンクに置換
+        title = title[:match.start()] + f'in <{full_url}|#{pr_number}>'
+    
+    return title.strip()
+
 def extract_tickets_with_titles_from_release_notes(release_body: str) -> Dict[str, str]:
     """リリースノートからJIRAチケット番号とタイトルを抽出
     Returns: {ticket_number: title} の辞書
@@ -39,6 +59,8 @@ def extract_tickets_with_titles_from_release_notes(release_body: str) -> Dict[st
             title = re.sub(r'^[\s\-\*\:]+', '', title).strip()
             
             if title:
+                # フォーマット処理
+                title = format_release_note_title(title)
                 ticket_titles[ticket] = title
             else:
                 ticket_titles[ticket] = '(タイトルなし)'
