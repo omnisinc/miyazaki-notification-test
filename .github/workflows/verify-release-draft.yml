@@ -28,6 +28,27 @@ jobs:
           ${{ github.event.release.body }}
           EOF
 
+      - name: Send initial Slack notification
+        id: initial_slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
+          payload: |
+            {
+              "text": "リリースがリクエストされました",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*リリースがリクエストされました*\nリリース名: `${{ github.event.release.name }}`\nJIRAチケットの検証を開始します..."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
       - name: Verify JIRA tickets
         id: verify
         env:
@@ -49,6 +70,7 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
+              "thread_ts": "${{ fromJson(steps.initial_slack.outputs.slack-result).ts }}",
               "attachments": [
                 {
                   "color": "#DC3545",
@@ -94,6 +116,7 @@ jobs:
           # Base payload
           PAYLOAD=$(cat <<EOF
           {
+            "thread_ts": "${{ fromJson(steps.initial_slack.outputs.slack-result).ts }}",
             "attachments": [
               {
                 "color": "#FFC107",
@@ -178,6 +201,7 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
+              "thread_ts": "${{ fromJson(steps.initial_slack.outputs.slack-result).ts }}",
               "attachments": [
                 {
                   "color": "#28A745",
