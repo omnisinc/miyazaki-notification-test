@@ -149,24 +149,87 @@ jobs:
         run: |
           echo "THREAD_TS=${{ steps.slack_main.outputs.ts }}" >> $GITHUB_ENV
           
+      - name: Generate rich text payload
+        if: ${{ inputs.changes != '' }}
+        id: generate_rich_text
+        run: |
+          # Create rich_text payload from changes
+          cat << 'EOF' > generate_rich_text.py
+          import json
+          import re
+          import sys
+          
+          changes = """${{ inputs.changes }}"""
+          lines = [line.strip() for line in changes.split('\\n') if line.strip()]
+          
+          elements = []
+          for line in lines:
+              # Remove leading - or *
+              if line.startswith('- ') or line.startswith('* '):
+                  line = line[2:]
+              
+              # Parse line into parts
+              parts = []
+              current_pos = 0
+              
+              # Find all links in the line
+              link_pattern = r'<([^|]+)\|([^>]+)>'
+              
+              for match in re.finditer(link_pattern, line):
+                  # Add text before the link
+                  if match.start() > current_pos:
+                      text_before = line[current_pos:match.start()]
+                      if text_before.strip():
+                          parts.append({"type": "text", "text": text_before})
+                  
+                  # Add the link
+                  url = match.group(1)
+                  text = match.group(2)
+                  parts.append({"type": "link", "url": url, "text": text})
+                  
+                  current_pos = match.end()
+              
+              # Add remaining text
+              if current_pos < len(line):
+                  remaining_text = line[current_pos:]
+                  if remaining_text.strip():
+                      parts.append({"type": "text", "text": remaining_text})
+              
+              # Create rich_text_section for this line
+              if parts:
+                  elements.append({
+                      "type": "rich_text_section",
+                      "elements": parts
+                  })
+          
+          # Create the complete payload
+          payload = {
+              "channel": "${{ steps.set_slack_config.outputs.channel_id }}",
+              "thread_ts": "${{ env.THREAD_TS }}",
+              "blocks": [
+                  {
+                      "type": "rich_text",
+                      "elements": [
+                          {
+                              "type": "rich_text_list",
+                              "style": "bullet",
+                              "elements": elements
+                          }
+                      ]
+                  }
+              ]
+          }
+          
+          print(json.dumps(payload))
+          EOF
+          
+          python3 generate_rich_text.py > thread_payload.json
+          
       - name: Post changes to thread
         if: ${{ inputs.changes != '' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ steps.set_slack_config.outputs.channel_id }}
-          payload: |
-            {
-              "channel": "${{ steps.set_slack_config.outputs.channel_id }}",
-              "thread_ts": "${{ env.THREAD_TS }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ inputs.changes }}"
-                  }
-                }
-              ]
-            }
+          payload-file-path: thread_payload.json
         env:
           SLACK_BOT_TOKEN: ${{ steps.set_slack_config.outputs.token }}

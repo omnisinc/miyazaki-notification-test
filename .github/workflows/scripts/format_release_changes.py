@@ -20,6 +20,10 @@ def format_changes(changes):
         if not line.strip():
             continue
         
+        # Stop processing if we hit Full Changelog section
+        if '**Full Changelog**' in line:
+            break
+        
         # First, convert PR URLs to Slack mrkdwn format before removing by @username
         # https://github.com/org/repo/pull/123 -> <https://github.com/org/repo/pull/123|#123>
         def replace_pr_url(match):
@@ -47,8 +51,8 @@ def format_changes(changes):
         
         formatted_lines.append(line)
     
-    # Wrap entire content in code block and join with escaped newlines for JSON
-    return '```\\n' + '\\n'.join(formatted_lines) + '\\n```'
+    # Join with escaped newlines for JSON
+    return '\\n'.join(formatted_lines)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
