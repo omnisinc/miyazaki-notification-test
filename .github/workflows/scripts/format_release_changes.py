@@ -41,12 +41,10 @@ def format_changes(changes):
         # WOR-1758 のような文字列が含まれている場合、Slack の mrkdwn 文字列に変換
         line = re.sub(r'(WOR-\d+)', r'<https://omnisinc.atlassian.net/browse/\1|\1>', line)
         
-        # Escape double quotes for JSON
-        line = line.replace('"', '\\"')
-        
         formatted_lines.append(line)
     
-    return '\\n'.join(formatted_lines)
+    # Join with newlines for Slack mrkdwn
+    return '\n'.join(formatted_lines)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

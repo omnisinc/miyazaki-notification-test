@@ -149,22 +149,24 @@ jobs:
         run: |
           echo "THREAD_TS=${{ steps.slack_main.outputs.ts }}" >> $GITHUB_ENV
           
-      - name: Send changes to thread
-        if: ${{ inputs.changes != '' }}
-        run: |
-          # Generate thread payload
-          THREAD_PAYLOAD=$(cat .github/config/slack_changed.json.template | 
-            sed "s/\${CHANNEL_ID}/${{ steps.set_slack_config.outputs.channel_id }}/g" | 
-            sed "s/\${THREAD_TS}/${{ env.THREAD_TS }}/g" | 
-            sed "s/\${FORMATTED_CHANGES}/${{ inputs.changes }}/g")
-          
-          echo "$THREAD_PAYLOAD" > thread_payload.json
-          
       - name: Post changes to thread
         if: ${{ inputs.changes != '' }}
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ steps.set_slack_config.outputs.channel_id }}
-          payload-file-path: thread_payload.json
+          payload: |
+            {
+              "channel": "${{ steps.set_slack_config.outputs.channel_id }}",
+              "thread_ts": "${{ env.THREAD_TS }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ inputs.changes }}"
+                  }
+                }
+              ]
+            }
         env:
           SLACK_BOT_TOKEN: ${{ steps.set_slack_config.outputs.token }}
