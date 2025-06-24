@@ -46,8 +46,7 @@ jobs:
         if: failure() && steps.verify.outcome == 'failure'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
               "text": "🚨 *リリースドラフト検証エラー*",
@@ -61,13 +60,14 @@ jobs:
                 }
               ]
             }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
       - name: Send Slack notification for differences
         if: steps.verify.outputs.has_differences == 'true'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
               "text": "🔍 リリースドラフト検証結果 - 差分あり",
@@ -102,13 +102,14 @@ jobs:
                 }
               ]
             }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
       - name: Send Slack notification for success
         if: steps.verify.outputs.has_differences == 'false' && steps.verify.outcome == 'success'
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
               "text": "✅ リリースドラフト検証成功",
@@ -122,3 +123,5 @@ jobs:
                 }
               ]
             }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
