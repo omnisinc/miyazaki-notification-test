@@ -83,19 +83,23 @@ def compare_tickets(release_tickets: Set[str], jira_tickets: Set[str]) -> Dict[s
 
 def main():
     parser = argparse.ArgumentParser(description='Verify JIRA tickets in release draft')
-    parser.add_argument('--release-body', required=True, help='Release body content')
+    parser.add_argument('--release-body-file', required=True, help='Path to file containing release body content')
     parser.add_argument('--release-name', required=True, help='Release name')
     parser.add_argument('--release-url', required=True, help='Release URL')
     parser.add_argument('--fix-version', help='JIRA fix version (optional, will try to extract from release name)')
     
     args = parser.parse_args()
     
+    # リリースボディをファイルから読み込む
+    with open(args.release_body_file, 'r', encoding='utf-8') as f:
+        release_body = f.read()
+    
     # リリースノートからチケット番号を抽出
-    release_tickets = extract_jira_tickets_from_release_notes(args.release_body)
+    release_tickets = extract_jira_tickets_from_release_notes(release_body)
     print(f"Found {len(release_tickets)} tickets in release notes: {sorted(release_tickets)}")
     
     # Fix versionをJIRAリンクから抽出
-    fix_version = extract_fix_version_from_jira_link(args.release_body)
+    fix_version = extract_fix_version_from_jira_link(release_body)
     
     if not fix_version:
         print("Error: Could not find JIRA version link in release notes. Expected format: https://omnisinc.atlassian.net/projects/WOR/versions/{version_id}/...")

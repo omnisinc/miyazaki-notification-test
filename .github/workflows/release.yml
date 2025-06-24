@@ -2,9 +2,10 @@ name: release
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   build:
+    if: github.event.release.prerelease == false
     uses: ./.github/workflows/_notify_slack.yml
     secrets: inherit

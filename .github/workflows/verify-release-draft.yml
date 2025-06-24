@@ -22,6 +22,12 @@ jobs:
         run: |
           pip install requests
           
+      - name: Save release body to file
+        run: |
+          cat << 'EOF' > /tmp/release_body.txt
+          ${{ github.event.release.body }}
+          EOF
+
       - name: Verify JIRA tickets
         id: verify
         env:
@@ -31,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python .github/workflows/scripts/verify_jira_tickets.py \
-            --release-body "${{ github.event.release.body }}" \
+            --release-body-file /tmp/release_body.txt \
             --release-name "${{ github.event.release.name }}" \
             --release-url "${{ github.event.release.html_url }}"
         continue-on-error: true
