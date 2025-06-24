@@ -63,45 +63,69 @@ jobs:
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
+      - name: Generate Slack payload for differences
+        if: steps.verify.outputs.has_differences == 'true'
+        id: generate_payload
+        run: |
+          # Base payload
+          PAYLOAD=$(cat <<EOF
+          {
+            "text": "🔍 リリースドラフト検証結果 - 差分あり",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "🔍 *リリースドラフト検証結果*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
+                }
+              }
+          EOF
+          )
+          
+          # Add only_in_release block if exists
+          if [ -n "${{ steps.verify.outputs.only_in_release }}" ]; then
+            PAYLOAD+=",
+              {
+                \"type\": \"section\",
+                \"text\": {
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"⚠️ *リリースノートのみに存在するチケット:*\n${{ steps.verify.outputs.only_in_release_list }}\"
+                }
+              }"
+          fi
+          
+          # Add only_in_jira block if exists
+          if [ -n "${{ steps.verify.outputs.only_in_jira }}" ]; then
+            PAYLOAD+=",
+              {
+                \"type\": \"section\",
+                \"text\": {
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"❌ *JIRAのみに存在するチケット:*\n${{ steps.verify.outputs.only_in_jira_list }}\"
+                }
+              }"
+          fi
+          
+          # Add common count block
+          PAYLOAD+=",
+              {
+                \"type\": \"section\",
+                \"text\": {
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"📊 共通のチケット数: ${{ steps.verify.outputs.common_count }}\"
+                }
+              }
+            ]
+          }"
+          
+          echo "$PAYLOAD" > slack_payload.json
+
       - name: Send Slack notification for differences
         if: steps.verify.outputs.has_differences == 'true'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
-          payload: |
-            {
-              "text": "🔍 リリースドラフト検証結果 - 差分あり",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "🔍 *リリースドラフト検証結果*\nリリース: <${{ github.event.release.html_url }}|${{ github.event.release.name }}>"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.verify.outputs.only_in_release != '' && format('⚠️ *リリースノートのみに存在するチケット:*\n{0}', steps.verify.outputs.only_in_release_list) || '' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.verify.outputs.only_in_jira != '' && format('❌ *JIRAのみに存在するチケット:*\n{0}', steps.verify.outputs.only_in_jira_list) || '' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "📊 共通のチケット数: ${{ steps.verify.outputs.common_count }}"
-                  }
-                }
-              ]
-            }
+          payload-file-path: slack_payload.json
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
