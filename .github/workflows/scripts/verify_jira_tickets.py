@@ -14,18 +14,37 @@ def extract_jira_tickets_from_release_notes(release_body: str) -> Set[str]:
     tickets = re.findall(pattern, release_body)
     return set(tickets)
 
-def extract_fix_version_from_release_name(release_name: str) -> str:
-    """リリース名からfix versionを抽出（例: v3.13.8-0 -> 11399）"""
-    # この部分は実際のJIRAのversion IDマッピングに応じて調整が必要
-    # 仮実装として、環境変数でマッピングを管理
-    version_mapping = json.loads(os.environ.get('JIRA_VERSION_MAPPING', '{}'))
+def extract_tickets_with_titles_from_release_notes(release_body: str) -> Dict[str, str]:
+    """リリースノートからJIRAチケット番号とタイトルを抽出
+    Returns: {ticket_number: title} の辞書
+    """
+    ticket_titles = {}
+    lines = release_body.split('\n')
     
-    # リリース名からバージョン番号を抽出
-    version_match = re.search(r'v?(\d+\.\d+\.\d+)', release_name)
-    if version_match:
-        version = version_match.group(1)
-        return version_mapping.get(version, '')
-    return ''
+    for line in lines:
+        # チケット番号を含む行を探す
+        match = re.search(r'\[?(WOR-\d+)\]?', line)
+        if match:
+            ticket = match.group(1)
+            # チケット番号の後の部分をタイトルとして抽出（]の後から行末まで）
+            title_start = match.end()
+            if ']' in line[match.start():]:
+                # [WOR-XXXX] 形式の場合
+                bracket_pos = line.find(']', match.start())
+                title_start = bracket_pos + 1
+            
+            # タイトル部分を取得してクリーンアップ
+            title = line[title_start:].strip()
+            # 先頭の記号やスペースを除去
+            title = re.sub(r'^[\s\-\*\:]+', '', title).strip()
+            
+            if title:
+                ticket_titles[ticket] = title
+            else:
+                ticket_titles[ticket] = '(タイトルなし)'
+    
+    return ticket_titles
+
 
 def extract_fix_version_from_jira_link(release_body: str) -> str:
     """リリースノート内のJIRAリンクからfix versionを抽出
@@ -71,6 +90,46 @@ def get_jira_tickets_from_api(fix_version: str) -> Set[str]:
         print(f"Error fetching JIRA tickets: {e}")
         return set()
 
+def get_jira_tickets_with_titles_from_api(fix_version: str) -> Dict[str, str]:
+    """JIRA APIからfix versionに紐づくチケットとタイトルを取得
+    Returns: {ticket_number: summary} の辞書
+    """
+    jira_email = os.environ.get('JIRA_EMAIL')
+    jira_api_token = os.environ.get('JIRA_API_TOKEN')
+    
+    if not all([jira_email, jira_api_token]):
+        print("Error: JIRA credentials not found in environment variables")
+        return {}
+    
+    auth = HTTPBasicAuth(jira_email, jira_api_token)
+    
+    # JQL query to get issues with specific fix version
+    jql = f"project = WOR AND fixversion = {fix_version} ORDER BY created DESC"
+    
+    url = "https://omnisinc.atlassian.net/rest/api/2/search"
+    params = {
+        'jql': jql,
+        'fields': 'key,summary',  # summaryを追加
+        'maxResults': 999
+    }
+    
+    try:
+        response = requests.get(url, auth=auth, params=params)
+        response.raise_for_status()
+        
+        data = response.json()
+        ticket_titles = {}
+        for issue in data.get('issues', []):
+            key = issue['key']
+            summary = issue.get('fields', {}).get('summary', '(タイトルなし)')
+            ticket_titles[key] = summary
+        
+        return ticket_titles
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching JIRA tickets: {e}")
+        return {}
+
 def compare_tickets(release_tickets: Set[str], jira_tickets: Set[str]) -> Dict[str, Set[str]]:
     """リリースノートとJIRAのチケットを比較"""
     return {
@@ -85,7 +144,6 @@ def main():
     parser.add_argument('--release-body-file', required=True, help='Path to file containing release body content')
     parser.add_argument('--release-name', required=True, help='Release name')
     parser.add_argument('--release-url', required=True, help='Release URL')
-    parser.add_argument('--fix-version', help='JIRA fix version (optional, will try to extract from release name)')
     
     args = parser.parse_args()
     
@@ -96,6 +154,9 @@ def main():
     # リリースノートからチケット番号を抽出
     release_tickets = extract_jira_tickets_from_release_notes(release_body)
     print(f"Found {len(release_tickets)} tickets in release notes: {sorted(release_tickets)}")
+    
+    # リリースノートからチケット番号とタイトルを抽出
+    release_ticket_titles = extract_tickets_with_titles_from_release_notes(release_body)
     
     # Fix versionをJIRAリンクから抽出
     fix_version = extract_fix_version_from_jira_link(release_body)
@@ -109,6 +170,9 @@ def main():
     # JIRA APIからチケットを取得
     jira_tickets = get_jira_tickets_from_api(fix_version)
     print(f"Found {len(jira_tickets)} tickets in JIRA: {sorted(jira_tickets)}")
+    
+    # JIRA APIからチケットとタイトルを取得
+    jira_ticket_titles = get_jira_tickets_with_titles_from_api(fix_version)
     
     # チケットを比較
     comparison = compare_tickets(release_tickets, jira_tickets)
@@ -128,19 +192,20 @@ def main():
             f.write(f"has_differences={'true' if comparison['only_in_release'] or comparison['only_in_jira'] else 'false'}\n")
             f.write(f"fix_version={fix_version}\n")
             
-            # 全てのチケット情報を出力
-            f.write(f"all_release_tickets={','.join(sorted(release_tickets))}\n")
-            f.write(f"all_jira_tickets={','.join(sorted(jira_tickets))}\n")
             
-            # Slack表示用の改行区切りリストも出力
-            only_in_release_list = '\\n'.join([f"• {ticket}" for ticket in sorted(comparison['only_in_release'])])
-            only_in_jira_list = '\\n'.join([f"• {ticket}" for ticket in sorted(comparison['only_in_jira'])])
-            all_release_list = '\\n'.join([f"• {ticket}" for ticket in sorted(release_tickets)])
-            all_jira_list = '\\n'.join([f"• {ticket}" for ticket in sorted(jira_tickets)])
-            f.write(f"only_in_release_list={only_in_release_list}\n")
-            f.write(f"only_in_jira_list={only_in_jira_list}\n")
-            f.write(f"all_release_list={all_release_list}\n")
-            f.write(f"all_jira_list={all_jira_list}\n")
+            
+            # タイトル付きのリストを生成（差分チケットのみ）
+            only_in_release_with_titles = '\\n'.join([
+                f"• {ticket}: {release_ticket_titles.get(ticket, '(タイトルなし)')}" 
+                for ticket in sorted(comparison['only_in_release'])
+            ])
+            only_in_jira_with_titles = '\\n'.join([
+                f"• {ticket}: {jira_ticket_titles.get(ticket, '(タイトルなし)')}" 
+                for ticket in sorted(comparison['only_in_jira'])
+            ])
+            
+            f.write(f"only_in_release_with_titles={only_in_release_with_titles}\n")
+            f.write(f"only_in_jira_with_titles={only_in_jira_with_titles}\n")
     
     # 不一致がある場合は終了コード1で終了
     if comparison['only_in_release'] or comparison['only_in_jira']:
