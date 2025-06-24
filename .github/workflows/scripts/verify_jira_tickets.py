@@ -110,7 +110,8 @@ def get_jira_tickets_from_api(fix_version: str) -> Set[str]:
         
     except requests.exceptions.RequestException as e:
         print(f"Error fetching JIRA tickets: {e}")
-        return set()
+        print(f"JIRA API Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def get_jira_tickets_with_titles_from_api(fix_version: str) -> Dict[str, str]:
     """JIRA APIからfix versionに紐づくチケットとタイトルを取得
@@ -150,7 +151,8 @@ def get_jira_tickets_with_titles_from_api(fix_version: str) -> Dict[str, str]:
         
     except requests.exceptions.RequestException as e:
         print(f"Error fetching JIRA tickets: {e}")
-        return {}
+        print(f"JIRA API Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 def compare_tickets(release_tickets: Set[str], jira_tickets: Set[str]) -> Dict[str, Set[str]]:
     """リリースノートとJIRAのチケットを比較"""

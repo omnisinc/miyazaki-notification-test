@@ -65,13 +65,13 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
-              "text": "リリースがリクエストされました",
+              "text": "Prerelease が作成・更新されました",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*リリースがリクエストされました*\nリリース名: `${{ github.event.release.name }}`\nJIRAチケットの検証を開始します..."
+                    "text": "*Prerelease が作成・更新されました*\nリリース名: `${{ github.event.release.name }}`\nJIRAチケットの検証を開始します..."
                   }
                 }
               ]
@@ -116,7 +116,7 @@ jobs:
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "JIRA リンクが見つからないか、検証中にエラーが発生しました。"
+                        "text": "actions 実行中にエラーが発生しました。\n手動でチケット番号突き合わせを行うか、エラーを修正してください。"
                       }
                     },
                     {
