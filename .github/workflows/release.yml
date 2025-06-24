@@ -5,6 +5,136 @@ on:
     types: [released]
 
 jobs:
+  verify-prerelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      is_verified: ${{ steps.check_verification.outputs.is_verified }}
+    steps:
+      - name: Check verification tag
+        id: check_verification
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = context.payload.release.tag_name;
+            const verificationTag = `${tag}-prerelease-verified`;
+            
+            try {
+              // Check if verification tag exists
+              await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${verificationTag}`
+              });
+              
+              console.log(`Verification tag found: ${verificationTag}`);
+              console.log('This release went through prerelease - OK');
+              core.setOutput('is_verified', 'true');
+              
+              // Clean up verification tag
+              try {
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `tags/${verificationTag}`
+                });
+                console.log('Verification tag cleaned up');
+              } catch (error) {
+                console.log('Could not clean up verification tag');
+              }
+              
+            } catch (error) {
+              console.log(`Verification tag NOT found: ${verificationTag}`);
+              console.log('This release did NOT go through prerelease - INVALID');
+              core.setOutput('is_verified', 'false');
+            }
+            
+      - name: Convert to draft
+        if: steps.check_verification.outputs.is_verified == 'false'
+        id: convert_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const release_id = context.payload.release.id;
+            const release_tag = context.payload.release.tag_name;
+            const release_name = context.payload.release.name;
+            
+            console.log(`Converting release ${release_id} to draft`);
+            
+            // Store release info for notification
+            core.setOutput('release_tag', release_tag);
+            core.setOutput('release_name', release_name);
+            
+            // Update release to draft
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id,
+              draft: true
+            });
+            
+            console.log('Release converted to draft successfully');
+            
+            // Get the updated release URL
+            const updatedRelease = await github.rest.repos.getRelease({
+              owner,
+              repo,
+              release_id
+            });
+            
+            // Set output for next step
+            core.setOutput('release_url', updatedRelease.data.html_url);
+            
+      - name: Send invalid release notification
+        if: steps.check_verification.outputs.is_verified == 'false'
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
+          payload: |
+            {
+              "attachments": [
+                {
+                  "color": "#FFC107",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*⚠️ 警告: Prerelease を経由しないリリース (draft→publish)*"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "リリース `${{ steps.convert_release.outputs.release_name }}` が draft から直接 publish されました。\n自動的に draft に変換しました。"
+                      }
+                    },
+                    {
+                      "type": "context",
+                      "elements": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ steps.convert_release.outputs.release_url }}|リリースを確認>"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|actions>"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
   build:
+    needs: verify-prerelease
+    if: needs.verify-prerelease.outputs.is_verified == 'true'
     uses: ./.github/workflows/_notify_slack.yml
     secrets: inherit
