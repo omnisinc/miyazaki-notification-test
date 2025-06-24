@@ -5,7 +5,7 @@ on:
     types: [created]
 
 jobs:
-  enforce-prerelease:
+  delete-invalid-release:
     # 新規作成された latest release のみを対象にする
     if: github.event.release.prerelease == false && github.event.release.draft == false
     runs-on: ubuntu-latest
@@ -58,7 +58,7 @@ jobs:
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "リリース `${{ steps.delete_release.outputs.release_name }}` が prerelease を経由せずに作成されました。\n自動的に削除しました。"
+                        "text": "リリース `${{ steps.delete_release.outputs.release_name }}` が prerelease を経由せずに作成されました。\nリリースを自動的に削除しました。\ntag は削除されていません。\ntag からもう一度リリースを作り直すことができます。"
                       }
                     },
                     {
@@ -66,7 +66,7 @@ jobs:
                       "elements": [
                         {
                           "type": "mrkdwn",
-                          "text": "削除されたタグ: `${{ steps.delete_release.outputs.release_tag }}`"
+                          "text": "tag: <${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.delete_release.outputs.release_tag }}|${{ steps.delete_release.outputs.release_tag }}>"
                         },
                         {
                           "type": "mrkdwn",
