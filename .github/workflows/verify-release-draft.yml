@@ -70,7 +70,7 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
-              "thread_ts": "${{ fromJson(steps.initial_slack.outputs.slack-result).ts }}",
+              "thread_ts": "${{ steps.initial_slack.outputs.ts }}",
               "attachments": [
                 {
                   "color": "#DC3545",
@@ -116,7 +116,7 @@ jobs:
           # Base payload
           PAYLOAD=$(cat <<EOF
           {
-            "thread_ts": "${{ fromJson(steps.initial_slack.outputs.slack-result).ts }}",
+            "thread_ts": "${{ steps.initial_slack.outputs.ts }}",
             "attachments": [
               {
                 "color": "#FFC107",
@@ -201,7 +201,7 @@ jobs:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
           payload: |
             {
-              "thread_ts": "${{ fromJson(steps.initial_slack.outputs.slack-result).ts }}",
+              "thread_ts": "${{ steps.initial_slack.outputs.ts }}",
               "attachments": [
                 {
                   "color": "#28A745",
