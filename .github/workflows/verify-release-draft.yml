@@ -94,7 +94,7 @@ jobs:
 
 
       - name: Send Slack notification on failure
-        if: failure()
+        if: steps.verify.outcome == 'failure'
         uses: slackapi/slack-github-action@v1.24.0
         with:
           channel-id: ${{ secrets.TEST_NOTIFY_SLACK_CHANNEL }}
