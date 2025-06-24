@@ -2,12 +2,20 @@ name: Enforce Prerelease
 
 on:
   release:
-    types: [created]
+    types: [created, edited]
 
 jobs:
   enforce-prerelease:
-    # 新規作成された latest release のみを対象にする
-    if: github.event.release.prerelease == false && github.event.release.draft == false
+    # 条件：
+    # 1. 新規作成の latest release、または
+    # 2. draft から latest release への変更 （prerelease 経由なし）
+    if: |
+      github.event.release.prerelease == false && 
+      github.event.release.draft == false &&
+      (
+        github.event.action == 'created' ||
+        (github.event.action == 'edited' && github.event.changes.draft.from == true)
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write
