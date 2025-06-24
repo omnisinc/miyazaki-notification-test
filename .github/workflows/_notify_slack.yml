@@ -195,16 +195,11 @@ jobs:
                   if remaining_text.strip():
                       parts.append({"type": "text", "text": remaining_text})
               
-              # Create rich_text_list_element with rich_text_section for this line
+              # Create rich_text_section for this line
               if parts:
                   elements.append({
-                      "type": "rich_text_list_element",
-                      "elements": [
-                          {
-                              "type": "rich_text_section",
-                              "elements": parts
-                          }
-                      ]
+                      "type": "rich_text_section",
+                      "elements": parts
                   })
           
           # Create the complete payload
