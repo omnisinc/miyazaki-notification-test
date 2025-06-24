@@ -5,7 +5,7 @@ import re
 def extract_changed_section(content):
     """Extract only the Changed section from release notes"""
     # Look for ## Changed section
-    changed_pattern = r'## Changed\s*(.*?)(?=##|$)'
+    changed_pattern = r'## What\'s Changed\s*(.*?)(?=##|$)'
     changed_match = re.search(changed_pattern, content, re.DOTALL)
     
     if changed_match:
