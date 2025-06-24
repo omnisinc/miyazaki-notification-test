@@ -152,14 +152,11 @@ jobs:
       - name: Send changes to thread
         if: ${{ inputs.changes != '' }}
         run: |
-          # Format changes
-          FORMATTED_CHANGES=$(echo "${{ inputs.changes }}" | sed 's/$/\\n/g' | tr '\n' ' ')
-          
           # Generate thread payload
           THREAD_PAYLOAD=$(cat .github/config/slack_changed.json.template | 
             sed "s/\${CHANNEL_ID}/${{ steps.set_slack_config.outputs.channel_id }}/g" | 
             sed "s/\${THREAD_TS}/${{ env.THREAD_TS }}/g" | 
-            sed "s/\${FORMATTED_CHANGES}/$FORMATTED_CHANGES/g")
+            sed "s/\${FORMATTED_CHANGES}/${{ inputs.changes }}/g")
           
           echo "$THREAD_PAYLOAD" > thread_payload.json
           
